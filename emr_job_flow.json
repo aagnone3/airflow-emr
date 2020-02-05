@@ -1,0 +1,74 @@
+ {
+    "Name": "FlightDelaysETL",
+    "LogUri": "s3://agnone/dend/etl/emr.log",
+    "ReleaseLabel": "emr-5.29.0",
+    "Instances": {
+        "InstanceGroups": [
+            {
+                "Name": "Masters",
+                "Market": "ON_DEMAND",
+                "InstanceRole": "MASTER",
+                "InstanceType": "m4.xlarge",
+                "InstanceCount": 1
+            },
+            {
+                "Name": "Slaves",
+                "Market": "ON_DEMAND",
+                "InstanceRole": "CORE",
+                "InstanceType": "m4.xlarge",
+                "InstanceCount": 2
+            }
+        ],
+        "Ec2KeyName": "aagnone",
+        "KeepJobFlowAliveWhenNoSteps": false,
+        "TerminationProtected": false,
+        "Ec2SubnetId": "subnet-0c316f00",
+        "EmrManagedMasterSecurityGroup": "sg-096bd3105169d9de2",
+        "EmrManagedSlaveSecurityGroup": "sg-08db8963f6500e3c0"
+    },
+    "Steps": [
+        {
+            "Name": "setup-debugging",
+            "ActionOnFailure": "TERMINATE_CLUSTER",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": ["state-pusher-script"]
+            }
+        },
+        {
+            "Name": "flight-delays-etl",
+            "ActionOnFailure": "TERMINATE_CLUSTER",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--master", "yarn",
+                    "--deploy-mode", "cluster",
+                    "s3://agnone/dend/etl/emr_etl.py"
+                ]
+            }
+        }
+    ],
+    "BootstrapActions": [
+        {
+            "Name": "install_dependencies",
+            "ScriptBootstrapAction": {
+                "Path": "s3://agnone/dend/etl/emr_install_dependencies.sh",
+                "Args": []
+            }
+        }
+    ],
+    "Applications": [
+        {"Name": "Spark"},
+        {"Name": "Hadoop"}
+    ],
+    "VisibleToAllUsers": true,
+    "JobFlowRole": "EMR_EC2_DefaultRole",
+    "ServiceRole": "EMR_DefaultRole",
+    "Tags": [
+        {
+            "Key": "Environment",
+            "Value": "dev"
+        }
+    ]
+}
